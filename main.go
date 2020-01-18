@@ -103,7 +103,17 @@ func main() {
 	// accept domains on stdin
 	sc := bufio.NewScanner(os.Stdin)
 	for sc.Scan() {
-		domain := strings.ToLower(sc.Text())
+		domain := strings.TrimSpace(strings.ToLower(sc.Text()))
+
+		// check there were no errors reading stdin (unlikely)
+		if err := sc.Err(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to read input: %s\n", err)
+			continue
+		}
+
+		if domain != "" {
+			continue
+		}
 
 		// submit http and https versions to be checked
 		if !skipDefault {
@@ -142,12 +152,6 @@ func main() {
 	// input channel. The workers will finish what they're
 	// doing and then call 'Done' on the WaitGroup
 	close(urls)
-
-	// check there were no errors reading stdin (unlikely)
-	if err := sc.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to read input: %s\n", err)
-	}
-
 	// Wait until all the workers have finished
 	wg.Wait()
 }
@@ -159,18 +163,20 @@ func isListening(client *http.Client, url string) bool {
 		return false
 	}
 
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36")
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Accept-Language", "en-US,en;q=0.8")
 	req.Header.Add("Connection", "close")
 	req.Close = true
 
 	resp, err := client.Do(req)
-	if resp != nil {
-		io.Copy(ioutil.Discard, resp.Body)
-		resp.Body.Close()
-	}
-
 	if err != nil {
 		return false
 	}
 
+	defer resp.Body.Close()
+	if resp != nil {
+		io.Copy(ioutil.Discard, resp.Body)
+	}
 	return true
 }
