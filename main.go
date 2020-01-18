@@ -30,7 +30,7 @@ func main() {
 
 	// concurrency flag
 	var concurrency int
-	flag.IntVar(&concurrency, "c", 20, "set the concurrency level")
+	flag.IntVar(&concurrency, "c", 50, "set the concurrency level")
 
 	// probe flags
 	var probes probeArgs
@@ -54,10 +54,11 @@ func main() {
 	timeout := time.Duration(to * 1000000)
 
 	var tr = &http.Transport{
-		MaxIdleConns:      30,
-		IdleConnTimeout:   time.Second,
-		DisableKeepAlives: true,
-		TLSClientConfig:   &tls.Config{InsecureSkipVerify: true},
+		MaxIdleConns:       30,
+		IdleConnTimeout:    time.Second,
+		DisableKeepAlives:  true,
+		DisableCompression: false,
+		TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
 		DialContext: (&net.Dialer{
 			Timeout:   timeout,
 			KeepAlive: time.Second,
@@ -72,6 +73,7 @@ func main() {
 		Transport:     tr,
 		CheckRedirect: re,
 		Timeout:       timeout,
+		Jar:           nil,
 	}
 
 	// we send urls to check on the urls channel,
@@ -105,7 +107,7 @@ func main() {
 	for sc.Scan() {
 		domain := strings.TrimSpace(strings.ToLower(sc.Text()))
 
-		if domain != "" {
+		if domain == "" {
 			continue
 		}
 
@@ -173,9 +175,9 @@ func isListening(client *http.Client, url string) bool {
 		return false
 	}
 
-	defer resp.Body.Close()
 	if resp != nil {
 		io.Copy(ioutil.Discard, resp.Body)
+		resp.Body.Close()
 	}
 	return true
 }
