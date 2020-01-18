@@ -105,12 +105,6 @@ func main() {
 	for sc.Scan() {
 		domain := strings.TrimSpace(strings.ToLower(sc.Text()))
 
-		// check there were no errors reading stdin (unlikely)
-		if err := sc.Err(); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to read input: %s\n", err)
-			continue
-		}
-
 		if domain != "" {
 			continue
 		}
@@ -146,6 +140,11 @@ func main() {
 				urls <- fmt.Sprintf("%s://%s:%s", pair[0], domain, pair[1])
 			}
 		}
+	}
+
+	// check there were no errors reading stdin (unlikely)
+	if err := sc.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to read input: %s\n", err)
 	}
 
 	// once we've sent all the URLs off we can close the
