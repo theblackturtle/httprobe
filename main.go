@@ -171,13 +171,14 @@ func isListening(client *http.Client, url string) bool {
 	req.Close = true
 
 	resp, err := client.Do(req)
-	if err != nil {
-		return false
-	}
-
 	if resp != nil {
 		io.Copy(ioutil.Discard, resp.Body)
 		resp.Body.Close()
 	}
+
+	if err != nil {
+		return false
+	}
+
 	return true
 }
