@@ -54,8 +54,8 @@ func main() {
 	timeout := time.Duration(to * 1000000)
 
 	var tr = &http.Transport{
-		MaxIdleConns:       30,
-		IdleConnTimeout:    time.Second,
+		// MaxIdleConns:       30,
+		// IdleConnTimeout:    time.Second,
 		DisableKeepAlives:  true,
 		DisableCompression: false,
 		TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
@@ -158,24 +158,22 @@ func main() {
 }
 
 func isListening(client *http.Client, url string) bool {
-
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return false
 	}
 
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36")
-	req.Header.Add("Accept", "*/*")
-	req.Header.Add("Accept-Language", "en-US,en;q=0.8")
+	// req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36")
+	// req.Header.Add("Accept", "*/*")
+	// req.Header.Add("Accept-Language", "en-US,en;q=0.8")
 	req.Header.Add("Connection", "close")
 	req.Close = true
 
 	resp, err := client.Do(req)
-	if resp != nil {
+	if resp != nil && resp.Body != nil {
+		defer resp.Body.Close()
 		io.Copy(ioutil.Discard, resp.Body)
-		resp.Body.Close()
 	}
-
 	if err != nil {
 		return false
 	}
