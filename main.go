@@ -54,15 +54,20 @@ func main() {
 	timeout := time.Duration(to * 1000000)
 
 	var tr = &http.Transport{
-		// MaxIdleConns:       30,
-		// IdleConnTimeout:    time.Second,
-		DisableKeepAlives:  true,
-		DisableCompression: false,
-		TLSClientConfig:    &tls.Config{InsecureSkipVerify: true},
-		DialContext: (&net.Dialer{
-			Timeout:   timeout,
-			KeepAlive: time.Second,
-		}).DialContext,
+		Dial: (&net.Dialer{
+			Timeout:   10 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).Dial,
+		MaxIdleConns:        0,
+		MaxConnsPerHost:     1000,
+		DisableKeepAlives:   true,
+		TLSHandshakeTimeout: 10 * time.Second,
+
+		ExpectContinueTimeout: 4 * time.Second,
+		ResponseHeaderTimeout: 3 * time.Second,
+
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
 	re := func(req *http.Request, via []*http.Request) error {
