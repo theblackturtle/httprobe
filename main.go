@@ -50,21 +50,17 @@ func main() {
 
 	flag.Parse()
 
-	// make an actual time.Duration out of the timeout
-	timeout := time.Duration(to * 1000000)
-
 	var tr = &http.Transport{
 		Dial: (&net.Dialer{
 			Timeout:   10 * time.Second,
-			KeepAlive: 30 * time.Second,
 			DualStack: true,
 		}).Dial,
-		MaxIdleConns:        0,
+		MaxIdleConns:        100,
 		MaxConnsPerHost:     1000,
 		DisableKeepAlives:   true,
 		TLSHandshakeTimeout: 10 * time.Second,
 
-		ExpectContinueTimeout: 4 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
 		ResponseHeaderTimeout: 3 * time.Second,
 
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -77,7 +73,7 @@ func main() {
 	client := &http.Client{
 		Transport:     tr,
 		CheckRedirect: re,
-		Timeout:       timeout,
+		Timeout:       time.Duration(to) * time.Second,
 		Jar:           nil,
 	}
 
@@ -176,7 +172,7 @@ func isListening(client *http.Client, url string) bool {
 
 	resp, err := client.Do(req)
 	if resp != nil && resp.Body != nil {
-		defer resp.Body.Close()
+		resp.Body.Close()
 		io.Copy(ioutil.Discard, resp.Body)
 	}
 	if err != nil {
