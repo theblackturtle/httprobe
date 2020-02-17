@@ -51,6 +51,10 @@ func main() {
 	// redirect flag
 	var redirect bool
 	flag.BoolVar(&redirect, "r", false, "Enable redirect")
+
+	var redirectEndpoint bool
+	flag.BoolVar(&redirectEndpoint, "e", false, "Print redirect endpoint")
+
 	flag.Parse()
 
 	var tr = &http.Transport{
@@ -96,7 +100,7 @@ func main() {
 
 		go func() {
 			for url := range urls {
-				if isListening(client, url) {
+				if isListening(client, url, redirectEndpoint) {
 					fmt.Println(url)
 					continue
 				}
@@ -165,7 +169,7 @@ func main() {
 	wg.Wait()
 }
 
-func isListening(client *http.Client, url string) bool {
+func isListening(client *http.Client, url string, redirectEndpoint bool) bool {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return false
@@ -184,6 +188,9 @@ func isListening(client *http.Client, url string) bool {
 	}
 	if err != nil {
 		return false
+	}
+	if redirectEndpoint {
+		fmt.Printf("redirect - %s\n", resp.Request.URL)
 	}
 
 	return true
