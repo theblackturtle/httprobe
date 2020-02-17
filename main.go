@@ -57,16 +57,14 @@ func main() {
 
 	flag.Parse()
 
-	var tr = &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout:   10 * time.Second,
-			DualStack: true,
-		}).Dial,
-		MaxIdleConns:        concurrency,
-		MaxConnsPerHost:     concurrency,
-		DisableKeepAlives:   true,
-		TLSHandshakeTimeout: 10 * time.Second,
+	timeout := time.Duration(to) * time.Millisecond
 
+	var tr = &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout:   timeout,
+			KeepAlive: time.Second,
+		}).DialContext,
+		DisableKeepAlives:     true,
 		ExpectContinueTimeout: 1 * time.Second,
 		ResponseHeaderTimeout: 3 * time.Second,
 
@@ -75,7 +73,7 @@ func main() {
 
 	client := &http.Client{
 		Transport: tr,
-		Timeout:   time.Duration(to) * time.Second,
+		Timeout:   timeout,
 		Jar:       nil,
 	}
 
