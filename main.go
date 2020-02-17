@@ -48,6 +48,9 @@ func main() {
 	var verbose bool
 	flag.BoolVar(&verbose, "v", false, "output errors to stderr")
 
+	// redirect flag
+	var redirect bool
+	flag.BoolVar(&redirect, "r", false, "Enable redirect")
 	flag.Parse()
 
 	var tr = &http.Transport{
@@ -55,8 +58,8 @@ func main() {
 			Timeout:   10 * time.Second,
 			DualStack: true,
 		}).Dial,
-		MaxIdleConns:        100,
-		MaxConnsPerHost:     1000,
+		MaxIdleConns:        concurrency,
+		MaxConnsPerHost:     concurrency,
 		DisableKeepAlives:   true,
 		TLSHandshakeTimeout: 10 * time.Second,
 
@@ -66,17 +69,21 @@ func main() {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
-	re := func(req *http.Request, via []*http.Request) error {
-		return http.ErrUseLastResponse
-	}
-
 	client := &http.Client{
-		Transport:     tr,
-		CheckRedirect: re,
-		Timeout:       time.Duration(to) * time.Second,
-		Jar:           nil,
+		Transport: tr,
+		Timeout:   time.Duration(to) * time.Second,
+		Jar:       nil,
 	}
 
+	if redirect {
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return nil
+		}
+	} else {
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	}
 	// we send urls to check on the urls channel,
 	// but only get them on the output channel if
 	// they are accepting connections
