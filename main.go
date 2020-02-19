@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -60,31 +59,21 @@ func main() {
 	timeout := time.Duration(to) * time.Millisecond
 
 	var tr = &http.Transport{
-		DialContext: (&net.Dialer{
-			Timeout:   timeout,
-			KeepAlive: time.Second,
-		}).DialContext,
-		DisableKeepAlives:     true,
-		ExpectContinueTimeout: 1 * time.Second,
-		ResponseHeaderTimeout: 3 * time.Second,
-
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		MaxIdleConns:        1000,
+		MaxIdleConnsPerHost: 500,
+		MaxConnsPerHost:     500,
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 	}
 
 	client := &http.Client{
-		Transport: tr,
-		Timeout:   timeout,
-		Jar:       nil,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse },
+		Transport:     tr,
+		Timeout:       timeout,
+		Jar:           nil,
 	}
 
 	if redirect {
-		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			return nil
-		}
-	} else {
-		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		}
+		client.CheckRedirect = nil
 	}
 	// we send urls to check on the urls channel,
 	// but only get them on the output channel if
@@ -173,9 +162,9 @@ func isListening(client *http.Client, url string, redirectEndpoint bool) bool {
 		return false
 	}
 
-	// req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36")
-	// req.Header.Add("Accept", "*/*")
-	// req.Header.Add("Accept-Language", "en-US,en;q=0.8")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36")
+	req.Header.Add("Accept", "*/*")
+	req.Header.Add("Accept-Language", "en-US,en;q=0.8")
 	req.Header.Add("Connection", "close")
 	req.Close = true
 
