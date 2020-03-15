@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/philhofer/fwd"
 )
 
 type probeArgs []string
@@ -54,6 +56,8 @@ func main() {
 	var redirectEndpoint bool
 	flag.BoolVar(&redirectEndpoint, "e", false, "Print redirect endpoint")
 
+	var outputFile string
+	flag.StringVar(&outputFile, "o", "", "Output file")
 	flag.Parse()
 
 	timeout := time.Duration(to) * time.Millisecond
@@ -75,6 +79,17 @@ func main() {
 	if redirect {
 		client.CheckRedirect = nil
 	}
+
+	var writer *fwd.Writer
+	if outputFile != "" {
+		f, err := os.OpenFile(outputFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, os.ModePerm)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to open output file: %s\n", err)
+			os.Exit(1)
+		}
+		writer = fwd.NewWriter(f)
+	}
+
 	// we send urls to check on the urls channel,
 	// but only get them on the output channel if
 	// they are accepting connections
@@ -88,7 +103,11 @@ func main() {
 		go func() {
 			for url := range urls {
 				if isListening(client, url, redirectEndpoint) {
-					fmt.Println(url)
+					if writer != nil {
+						writer.WriteString(url + "\n")
+					} else {
+						fmt.Println(url)
+					}
 					continue
 				}
 
